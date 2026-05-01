@@ -13,6 +13,15 @@ from utils.cacti_config import cacti_config
 # finally runs cacti to generate the rest of the data.
 ################################################################################
 
+# Map macro_class → (rw_ports, exclusive_r_ports, exclusive_w_ports)
+# These map to Cacti's -read-write port / -exclusive read port / -exclusive write port.
+_PORT_MAP = {
+    '1RW':  lambda r, w: (1, 0, 0),
+    '1R1W': lambda r, w: (0, 1, 1),
+    'NR1W': lambda r, w: (0, r, 1),
+    'NRW':  lambda r, w: (r, 0, 0),  # N true-dual-port RW ports
+}
+
 class Memory:
 
   def __init__( self, process, sram_data , output_dir = None, cacti_dir = None):
@@ -23,7 +32,13 @@ class Memory:
     self.depth          = int(sram_data['depth'])
     self.num_banks      = int(sram_data['banks'])
     self.cache_type     = str(sram_data['type']) if 'type' in sram_data else 'cache'
-    self.rw_ports       = 1
+    self.macro_class    = str(sram_data.get('macro_class', '1RW'))
+    self.num_r_ports    = int(sram_data.get('reads', 1))
+    self.num_w_ports    = int(sram_data.get('clocked_writes', 1))
+
+    port_fn = _PORT_MAP.get(self.macro_class, _PORT_MAP['1RW'])
+    self.rw_ports, self.r_ports, self.w_ports = port_fn(self.num_r_ports, self.num_w_ports)
+
     self.width_in_bytes = math.ceil(self.width_in_bits / 8.0)
     self.total_size     = self.width_in_bytes * self.depth
     if output_dir: # Output dir was set by command line option
@@ -79,7 +94,7 @@ class Memory:
   def __run_cacti( self ):
     fid = open(os.sep.join([self.results_dir,'cacti.cfg']), 'w')
     fid.write( cacti_config.format( self.total_size
-             , self.width_in_bytes, self.rw_ports, 0, 0
+             , self.width_in_bytes, self.rw_ports, self.r_ports, self.w_ports
              , self.process.tech_um, self.width_in_bytes*8, self.num_banks
              , self.cache_type ))
     fid.close()
@@ -88,4 +103,3 @@ class Memory:
     cmd = os.sep.join(['.','cacti -infile ']) + os.sep.join([self.results_dir,'cacti.cfg'])
     os.system( cmd)
     os.chdir(odir)
-
