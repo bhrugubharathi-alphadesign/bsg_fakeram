@@ -11,6 +11,8 @@ from utils.generate_lib import generate_lib
 from utils.generate_lef import generate_lef
 from utils.generate_verilog import generate_verilog
 from utils.generate_verilog import generate_verilog_bb
+from utils.generate_memlib import generate_memlib
+from utils.generate_techmap import generate_techmap
 
 ################################################################################
 # RUN GENERATOR
@@ -63,6 +65,8 @@ def main ( args : argparse.Namespace):
     generate_lef(memory)
     generate_verilog(memory, tmChkExpand=process.vlogTimingCheckSignalExpansion)
     generate_verilog_bb(memory)
+    generate_memlib(memory)
+    generate_techmap(memory)
 
 ### Entry point
 if __name__ == '__main__':
