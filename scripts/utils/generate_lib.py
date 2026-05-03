@@ -3,31 +3,59 @@ import math
 import time
 import datetime
 
+from utils.port_shape import all_port_pins
+
 ################################################################################
 # GENERATE LIBERTY VIEW
 #
-# Generate a .lib file based on the given SRAM.
-# Dispatches on mem.macro_class: 1RW (default), 1R1W, NR1W, NRW.
+# Generate a .lib file from mem.shape. The memory_read(address:) /
+# memory_write(address:) annotations on each bus are what Yosys's
+# memory_libmap uses to match $mem_v2 port shapes against the macro:
 #
-# The memory_read(address:) / memory_write(address:) annotations on bus groups
-# are what Yosys's memory_libmap uses to match $mem_v2 port shapes. Getting
-# these right is the key invariant this file must maintain:
-#   1RW  -> shared addr_in, one memory_read + one memory_write on the same bus
-#   1R1W -> separate rd_addr_in / wr_addr_in
-#   NR1W -> N memory_read groups each with their own rd_addr_in_N
-#   NRW  -> N pairs of (memory_read + memory_write) each with rw_addr_in_N
+#   per RW port i  -> rw_rd_out_i   memory_read(address: rw_addr_in_i)
+#                     rw_wd_in_i    memory_write(address: rw_addr_in_i)
+#                     rw_w_mask_in_i memory_write(address: rw_addr_in_i)
+#   per R  port i  -> r_rd_out_i    memory_read(address: r_addr_in_i)
+#   per W  port i  -> w_wd_in_i     memory_write(address: w_addr_in_i)
+#                     w_w_mask_in_i memory_write(address: w_addr_in_i)
 ################################################################################
 
-def generate_lib( mem ):
-    mc = getattr(mem, 'macro_class', '1RW')
-    if mc == '1R1W':
-        _gen_lib_1r1w(mem)
-    elif mc == 'NR1W':
-        _gen_lib_nr1w(mem)
-    elif mc == 'NRW':
-        _gen_lib_nrw(mem)
-    else:
-        _gen_lib_1rw(mem)
+def generate_lib(mem):
+    p = _lib_params(mem)
+    name = p['name']
+    fout = os.sep.join([mem.results_dir, name + '.lib'])
+    with open(fout, 'w') as f:
+        _write_lib_header(f, p)
+
+        f.write('cell(%s) {\n' % name)
+        f.write('    area : %.3f;\n' % p['area'])
+        f.write('    interface_timing : true;\n')
+        f.write('    memory() {\n')
+        f.write('        type : ram;\n')
+        f.write('        address_width : %d;\n' % p['addr_width'])
+        f.write('        word_width : %d;\n' % p['bits'])
+        f.write('    }\n')
+
+        _write_clk_pin(f, p)
+        _write_ce_pin(f, p)
+
+        for kind, pins in all_port_pins(mem.shape):
+            if kind == 'rw':
+                _write_rd_bus(f, p, pins['rd'], pins['addr'])
+                _write_we_pin(f, p, pins['we'])
+                _write_addr_bus(f, p, pins['addr'])
+                _write_wd_bus(f, p, pins['wd'], pins['addr'], pins['we'])
+                _write_wmask_bus(f, p, pins['wmask'], pins['addr'], pins['we'])
+            elif kind == 'r':
+                _write_rd_bus(f, p, pins['rd'], pins['addr'])
+                _write_addr_bus(f, p, pins['addr'])
+            elif kind == 'w':
+                _write_we_pin(f, p, pins['we'])
+                _write_addr_bus(f, p, pins['addr'])
+                _write_wd_bus(f, p, pins['wd'], pins['addr'], pins['we'])
+                _write_wmask_bus(f, p, pins['wmask'], pins['addr'], pins['we'])
+
+        _write_lib_footer(f, p)
 
 
 # ---------------------------------------------------------------------------
@@ -355,141 +383,3 @@ def _write_wmask_bus(f, p, bus_name, addr_pin, we_pin):
 def _write_lib_footer(f, p):
     f.write('    cell_leakage_power : %.3f;\n' % p['leakage'])
     f.write('}\n\n}\n')
-
-
-# ---------------------------------------------------------------------------
-# 1RW
-# ---------------------------------------------------------------------------
-
-def _gen_lib_1rw(mem):
-    p = _lib_params(mem)
-    name = p['name']
-    fout = os.sep.join([mem.results_dir, name + '.lib'])
-    with open(fout, 'w') as f:
-        _write_lib_header(f, p)
-
-        f.write('cell(%s) {\n' % name)
-        f.write('    area : %.3f;\n' % p['area'])
-        f.write('    interface_timing : true;\n')
-        f.write('    memory() {\n')
-        f.write('        type : ram;\n')
-        f.write('        address_width : %d;\n' % p['addr_width'])
-        f.write('        word_width : %d;\n' % p['bits'])
-        f.write('    }\n')
-
-        _write_clk_pin(f, p)
-        _write_rd_bus(f, p, 'rd_out', 'addr_in')
-        _write_we_pin(f, p, 'we_in')
-        _write_ce_pin(f, p)
-        _write_addr_bus(f, p, 'addr_in')
-        _write_wd_bus(f, p, 'wd_in', 'addr_in', 'we_in')
-        _write_wmask_bus(f, p, 'w_mask_in', 'addr_in', 'we_in')
-        _write_lib_footer(f, p)
-
-
-# ---------------------------------------------------------------------------
-# 1R1W  — separate read / write address buses
-# ---------------------------------------------------------------------------
-
-def _gen_lib_1r1w(mem):
-    p = _lib_params(mem)
-    name = p['name']
-    fout = os.sep.join([mem.results_dir, name + '.lib'])
-    with open(fout, 'w') as f:
-        _write_lib_header(f, p)
-
-        f.write('cell(%s) {\n' % name)
-        f.write('    area : %.3f;\n' % p['area'])
-        f.write('    interface_timing : true;\n')
-        f.write('    memory() {\n')
-        f.write('        type : ram;\n')
-        f.write('        address_width : %d;\n' % p['addr_width'])
-        f.write('        word_width : %d;\n' % p['bits'])
-        f.write('    }\n')
-
-        _write_clk_pin(f, p)
-
-        # Read port: rd_out driven by rd_addr_in
-        _write_rd_bus(f, p, 'rd_out', 'rd_addr_in')
-        _write_addr_bus(f, p, 'rd_addr_in')
-
-        # Write port: wd_in / w_mask_in addressed by wr_addr_in
-        _write_we_pin(f, p, 'we_in')
-        _write_ce_pin(f, p)
-        _write_addr_bus(f, p, 'wr_addr_in')
-        _write_wd_bus(f, p, 'wd_in', 'wr_addr_in', 'we_in')
-        _write_wmask_bus(f, p, 'w_mask_in', 'wr_addr_in', 'we_in')
-        _write_lib_footer(f, p)
-
-
-# ---------------------------------------------------------------------------
-# NR1W  — N independent read ports + 1 write port
-# ---------------------------------------------------------------------------
-
-def _gen_lib_nr1w(mem):
-    p = _lib_params(mem)
-    name = p['name']
-    nr   = int(getattr(mem, 'num_r_ports', 2))
-    fout = os.sep.join([mem.results_dir, name + '.lib'])
-    with open(fout, 'w') as f:
-        _write_lib_header(f, p)
-
-        f.write('cell(%s) {\n' % name)
-        f.write('    area : %.3f;\n' % p['area'])
-        f.write('    interface_timing : true;\n')
-        f.write('    memory() {\n')
-        f.write('        type : ram;\n')
-        f.write('        address_width : %d;\n' % p['addr_width'])
-        f.write('        word_width : %d;\n' % p['bits'])
-        f.write('    }\n')
-
-        _write_clk_pin(f, p)
-
-        # N independent read ports
-        for i in range(nr):
-            _write_rd_bus(f, p, f'rd_out_{i}', f'rd_addr_in_{i}')
-            _write_addr_bus(f, p, f'rd_addr_in_{i}')
-
-        # Single write port
-        _write_we_pin(f, p, 'we_in')
-        _write_ce_pin(f, p)
-        _write_addr_bus(f, p, 'wr_addr_in')
-        _write_wd_bus(f, p, 'wd_in', 'wr_addr_in', 'we_in')
-        _write_wmask_bus(f, p, 'w_mask_in', 'wr_addr_in', 'we_in')
-        _write_lib_footer(f, p)
-
-
-# ---------------------------------------------------------------------------
-# NRW  — N true-dual-port read-write ports
-# ---------------------------------------------------------------------------
-
-def _gen_lib_nrw(mem):
-    p  = _lib_params(mem)
-    name = p['name']
-    nr   = int(getattr(mem, 'num_r_ports', 2))
-    fout = os.sep.join([mem.results_dir, name + '.lib'])
-    with open(fout, 'w') as f:
-        _write_lib_header(f, p)
-
-        f.write('cell(%s) {\n' % name)
-        f.write('    area : %.3f;\n' % p['area'])
-        f.write('    interface_timing : true;\n')
-        f.write('    memory() {\n')
-        f.write('        type : ram;\n')
-        f.write('        address_width : %d;\n' % p['addr_width'])
-        f.write('        word_width : %d;\n' % p['bits'])
-        f.write('    }\n')
-
-        _write_clk_pin(f, p)
-
-        for i in range(nr):
-            we_pin = f'rw_we_in_{i}'
-            addr   = f'rw_addr_in_{i}'
-            _write_rd_bus(f, p, f'rw_rd_out_{i}', addr)
-            _write_we_pin(f, p, we_pin)
-            _write_addr_bus(f, p, addr)
-            _write_wd_bus(f, p, f'rw_wd_in_{i}', addr, we_pin)
-            _write_wmask_bus(f, p, f'rw_w_mask_in_{i}', addr, we_pin)
-
-        _write_ce_pin(f, p)
-        _write_lib_footer(f, p)

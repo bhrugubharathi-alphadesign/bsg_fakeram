@@ -2,65 +2,43 @@ import os
 import sys
 import math
 
+from utils.port_shape import all_port_pins
+
 ################################################################################
 # GENERATE LEF VIEW
 #
-# Generate a .lef file based on the given SRAM.
-# Dispatches on mem.macro_class for correct pin names and counts.
+# Generate a .lef file from mem.shape (PortShape). Pin groups are laid out in
+# canonical port order: rw0..rw{rw-1}, r0..r{r-1}, w0..w{w-1}, then shared
+# clk/ce_in. Within a port, each bus pin (addr/data/mask) is its own group so
+# the LEF layout puts a spacing gap between buses.
 ################################################################################
 
 def generate_lef( mem ):
-    mc = getattr(mem, 'macro_class', '1RW')
-    pin_groups = _build_pin_groups(mem, mc)
+    pin_groups = _build_pin_groups(mem)
     _write_lef(mem, pin_groups)
 
 
-def _build_pin_groups(mem, mc):
-    """
-    Return a list of pin groups, each group being a list of (pin_name, is_input).
-    Groups are separated by spacing gaps in the LEF layout.
-    """
+def _build_pin_groups(mem):
     bits = int(mem.width_in_bits)
-    aw   = math.ceil(math.log2(int(mem.depth)))
-    nr   = int(getattr(mem, 'num_r_ports', 1))
-
-    if mc == '1R1W':
-        return [
-            [('w_mask_in[%d]' % i, True)  for i in range(bits)],
-            [('rd_out[%d]'    % i, False) for i in range(bits)],
-            [('wd_in[%d]'     % i, True)  for i in range(bits)],
-            [('rd_addr_in[%d]'% i, True)  for i in range(aw)],
-            [('wr_addr_in[%d]'% i, True)  for i in range(aw)],
-            [('we_in', True), ('ce_in', True), ('clk', True)],
-        ]
-    elif mc == 'NR1W':
-        groups = []
-        for i in range(nr):
-            groups.append([('rd_out_%d[%d]'     % (i, b), False) for b in range(bits)])
-            groups.append([('rd_addr_in_%d[%d]' % (i, b), True)  for b in range(aw)])
-        groups.append([('w_mask_in[%d]' % b, True) for b in range(bits)])
-        groups.append([('wd_in[%d]'     % b, True) for b in range(bits)])
-        groups.append([('wr_addr_in[%d]'% b, True) for b in range(aw)])
-        groups.append([('we_in', True), ('ce_in', True), ('clk', True)])
-        return groups
-    elif mc == 'NRW':
-        groups = []
-        for i in range(nr):
-            groups.append([('rw_rd_out_%d[%d]'   % (i, b), False) for b in range(bits)])
-            groups.append([('rw_wd_in_%d[%d]'     % (i, b), True)  for b in range(bits)])
-            groups.append([('rw_w_mask_in_%d[%d]' % (i, b), True)  for b in range(bits)])
-            groups.append([('rw_addr_in_%d[%d]'   % (i, b), True)  for b in range(aw)])
-            groups.append([('rw_we_in_%d' % i, True)])
-        groups.append([('ce_in', True), ('clk', True)])
-        return groups
-    else:  # 1RW (default)
-        return [
-            [('w_mask_in[%d]' % i, True)  for i in range(bits)],
-            [('rd_out[%d]'    % i, False) for i in range(bits)],
-            [('wd_in[%d]'     % i, True)  for i in range(bits)],
-            [('addr_in[%d]'   % i, True)  for i in range(aw)],
-            [('we_in', True), ('ce_in', True), ('clk', True)],
-        ]
+    aw   = max(1, math.ceil(math.log2(int(mem.depth))))
+    groups = []
+    for kind, pins in all_port_pins(mem.shape):
+        if kind == 'rw':
+            groups.append([(f'{pins["rd"]}[{b}]',    False) for b in range(bits)])
+            groups.append([(f'{pins["wd"]}[{b}]',    True)  for b in range(bits)])
+            groups.append([(f'{pins["wmask"]}[{b}]', True)  for b in range(bits)])
+            groups.append([(f'{pins["addr"]}[{b}]',  True)  for b in range(aw)])
+            groups.append([(pins['we'], True)])
+        elif kind == 'r':
+            groups.append([(f'{pins["rd"]}[{b}]',    False) for b in range(bits)])
+            groups.append([(f'{pins["addr"]}[{b}]',  True)  for b in range(aw)])
+        elif kind == 'w':
+            groups.append([(f'{pins["wd"]}[{b}]',    True)  for b in range(bits)])
+            groups.append([(f'{pins["wmask"]}[{b}]', True)  for b in range(bits)])
+            groups.append([(f'{pins["addr"]}[{b}]',  True)  for b in range(aw)])
+            groups.append([(pins['we'], True)])
+    groups.append([('ce_in', True), ('clk', True)])
+    return groups
 
 
 def _write_lef(mem, pin_groups):
