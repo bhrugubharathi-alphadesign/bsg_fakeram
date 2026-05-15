@@ -139,7 +139,7 @@ remains contiguous. Forced P-CACTI at 22 nm is still useful for comparison.
 
 - Smoke test 7 nm through P-CACTI.
 - Smoke test 22, 45, and 90 nm through legacy CACTI.
-- Include at least 1RW and 1RW1R shapes.
+- Include at least 1RW, 1RW1R, and write-only shapes.
 - Check generated LEF/Liberty/Verilog/memlib/techmap files exist.
 
 **Validation**

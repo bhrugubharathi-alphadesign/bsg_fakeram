@@ -38,6 +38,7 @@ def write_pcacti_config(mem, pcacti_dir, output_file):
   block_size_bytes = _model_block_size(mem.width_in_bytes)
   cache_size_bytes = _model_cache_size(mem.total_size, mem.num_banks, block_size_bytes)
   bus_width_bits = mem.width_in_bytes * 8
+  rw_ports, r_ports, w_ports = _model_port_counts(mem)
 
   root = ET.Element('cache_config')
   _text(root, 'transistor_type', profile['transistor_type'])
@@ -58,9 +59,9 @@ def write_pcacti_config(mem, pcacti_dir, output_file):
   _text(root, 'sram_cell', str(sram_cell_file))
 
   ports = ET.SubElement(root, 'ports')
-  _text(ports, 'read_write_port', str(mem.rw_ports))
-  _text(ports, 'exclusive_read_port', str(mem.r_ports))
-  _text(ports, 'exclusive_write_port', str(mem.w_ports))
+  _text(ports, 'read_write_port', str(rw_ports))
+  _text(ports, 'exclusive_read_port', str(r_ports))
+  _text(ports, 'exclusive_write_port', str(w_ports))
   _text(ports, 'single_ended_read_ports', '0')
 
   _text(root, 'cache_model', 'UCA')
@@ -162,6 +163,22 @@ def _model_block_size(width_in_bytes):
 def _model_cache_size(total_size, banks, block_size):
   min_size = max(int(total_size), int(banks) * 64, int(banks) * block_size * 4)
   return _next_power_of_two(min_size)
+
+
+def _model_port_counts(mem):
+  rw_ports = int(mem.rw_ports)
+  r_ports = int(mem.r_ports)
+  w_ports = int(mem.w_ports)
+  if rw_ports + r_ports > 0:
+    return rw_ports, r_ports, w_ports
+
+  if w_ports < 1:
+    raise ValueError(f"sram '{mem.name}': P-CACTI requires at least one modeled port")
+
+  # P-CACTI asserts when the modeled SRAM has no read-capable port because it
+  # always computes read energy. For write-only macros, model one write port as
+  # read-write for PPA while preserving the actual generated macro port shape.
+  return 1, 0, w_ports - 1
 
 
 def _objective(parent, name, weights, deviations):
