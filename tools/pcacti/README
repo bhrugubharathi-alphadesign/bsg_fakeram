@@ -1,0 +1,12 @@
+How to use P-CACTI?
+====================
+
+-> define the cache model using the files in ./xmls directory.
+-> for CMOS, run the "cacti" binary: "./cacti -infile xmls/cache_config_cmos.xml > pcacti_detailed_report.txt"
+-> for FinFET, run the "cacti" binary: "./cacti -infile xmls/cache_config_finfet.xml > pcacti_detailed_report.txt"
+
+Detailed simulation report will be written in "./pcacti_detailed_report.txt". Also, there will be a simulation summary written in "./pcacti_report.txt".
+
+
+
+
