@@ -1628,8 +1628,8 @@ void output_summary_of_results_file(uca_org_t *fr) {
   csv << fr->power.readOp.leakage*1e3 << ",";
   csv << fr->area*1e-6 << ",";
   csv << g_tp.FO4*1e12 << ",";
-  csv << fr->cache_len << ",";
-  csv << fr->cache_ht << endl;
+  csv << fr->cache_ht << ",";
+  csv << fr->cache_len << endl;
 }
 
 /****** Alireza - END ******/

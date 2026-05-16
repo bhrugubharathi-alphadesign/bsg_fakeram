@@ -67,6 +67,8 @@ remains contiguous. Forced P-CACTI at 22 nm is still useful for comparison.
 - Generate P-CACTI XML from process data, SRAM geometry, banks, cache type, and
   port shape.
 - Select P-CACTI device XMLs from the checked-in characterization profiles.
+- Validate P-CACTI voltages against exact characterized device points instead
+  of guessing near-threshold mode from a global cutoff.
 - Generate per-result-dir SRAM cell XML files so generated configs rerun from
   their result directories.
 
@@ -74,6 +76,8 @@ remains contiguous. Forced P-CACTI at 22 nm is still useful for comparison.
 
 - Generate one legacy `cacti.cfg` for a 45 nm SRAM.
 - Generate one P-CACTI `pcacti.xml` for a 7 nm SRAM.
+- Generate one P-CACTI `pcacti.xml` for a 14 nm / 0.55 V SRAM and confirm it
+  uses `near-threshold`.
 - Confirm both generated configs use the expected port counts.
 
 ## Stage 3: Shared Result Contract

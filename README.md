@@ -29,11 +29,11 @@ JSON file that can be found in `./example_cfgs/pcacti7.cfg`:
 ```
 {
   "tech_nm": 7,
-  "voltage": 0.7,
+  "voltage": 0.45,
   "metalPrefix": "M",
   "pinWidth_nm": 40,
   "pinHeight_nm": 80,
-  "pinPitch_nm": 80,
+  "pinPitch_nm": 60,
   "snapWidth_nm": 1,
   "snapHeight_nm": 1,
   "flipPins": true,
@@ -56,7 +56,9 @@ larger use legacy CACTI. The checked-in P-CACTI profiles currently include
 7 nm FinFET, 14 nm CMOS, and 22 nm CMOS; auto mode still routes 22 nm to legacy
 CACTI to preserve the contiguous CACTI 22-90 nm coverage.
 
-`voltage` - Nominal operating voltage for the tech node.
+`voltage` - Nominal operating voltage for the tech node. P-CACTI-backed nodes
+must match a characterized device point from the selected P-CACTI profile
+exactly, for example 7 nm at 0.45 V or 0.3 V and 14 nm at 0.8 V or 0.55 V.
 
 `metalPrefix` - The string that prefixes metal layers.
 

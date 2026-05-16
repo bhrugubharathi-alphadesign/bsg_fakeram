@@ -8,19 +8,27 @@ PCACTI_TECH_PROFILES = {
     'transistor_type': 'finfet',
     'technology_node': '0.007',
     'device': 'xmls/devices/finfet_7nm_std.xml',
-    'near_threshold': True,
+    'operating_voltages': {
+      'super-threshold': 0.45,
+      'near-threshold': 0.3,
+    },
   },
   14: {
     'transistor_type': 'cmos',
     'technology_node': '0.014',
     'device': 'xmls/devices/cmos_14nm_std.xml',
-    'near_threshold': True,
+    'operating_voltages': {
+      'super-threshold': 0.8,
+      'near-threshold': 0.55,
+    },
   },
   22: {
     'transistor_type': 'cmos',
     'technology_node': '0.022',
     'device': 'xmls/devices/cmos_22nm_hp.xml',
-    'near_threshold': False,
+    'operating_voltages': {
+      'super-threshold': 0.8,
+    },
   },
 }
 
@@ -43,7 +51,7 @@ def write_pcacti_config(mem, pcacti_dir, output_file):
   root = ET.Element('cache_config')
   _text(root, 'transistor_type', profile['transistor_type'])
   _text(root, 'technology_node', profile['technology_node'])
-  _text(root, 'operating_voltage', _operating_voltage(mem.process.voltage, profile))
+  _text(root, 'operating_voltage', _operating_voltage(mem.process.voltage, profile, mem.name))
   _text(root, 'temperature', '300')
   _text(root, 'cache_size', str(cache_size_bytes))
   _text(root, 'block_size', str(block_size_bytes))
@@ -148,10 +156,20 @@ def _pcacti_profile(mem, pcacti_dir):
   return profile
 
 
-def _operating_voltage(voltage, profile):
-  if profile['near_threshold'] and float(voltage) <= 0.4:
-    return 'near-threshold'
-  return 'super-threshold'
+def _operating_voltage(voltage, profile, mem_name):
+  requested = float(voltage)
+  for mode, supported in profile['operating_voltages'].items():
+    if math.isclose(requested, float(supported), rel_tol=0.0, abs_tol=1e-6):
+      return mode
+
+  supported = ', '.join(
+    f"{supported:g} V ({mode})"
+    for mode, supported in profile['operating_voltages'].items()
+  )
+  raise ValueError(
+    f"sram '{mem_name}': P-CACTI profile {profile['technology_node']} "
+    f"supports only {supported}; got {requested:g} V"
+  )
 
 
 def _model_block_size(width_in_bytes):
