@@ -1,3 +1,5 @@
+from pathlib import Path
+
 ################################################################################
 # CACTI CONFIG
 #
@@ -89,3 +91,18 @@ cacti_config = '''# cacti.cfg
 -mirror_in_bob "F"
 '''
 
+
+def write_cacti_config(mem, output_file):
+  """Write the legacy CACTI text config for one Memory instance."""
+  output_file = Path(output_file)
+  output_file.write_text(cacti_config.format(
+    mem.total_size,
+    mem.width_in_bytes,
+    mem.rw_ports,
+    mem.r_ports,
+    mem.w_ports,
+    mem.process.tech_um,
+    mem.width_in_bytes * 8,
+    mem.num_banks,
+    mem.cache_type,
+  ))

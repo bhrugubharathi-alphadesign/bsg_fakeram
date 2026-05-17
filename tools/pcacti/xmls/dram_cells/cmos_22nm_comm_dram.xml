@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--************************************************************************-->
+<!--        22nm Planar CMOS Commodity DRAM Technological Parameters        -->
+<!--************************************************************************-->
+<!--                               06/22/2014                               -->
+<!--************************************************************************-->
+
+<dram_cell>
+	<I_on_dram_cell>20e-6</I_on_dram_cell>
+	<I_off_dram_cell_worst_case_length_temp>1e-15</I_off_dram_cell_worst_case_length_temp>
+	<width_dram_access_transistor>0.022</width_dram_access_transistor>
+	<Wmemcellpmos_dram>0</Wmemcellpmos_dram>
+	<Wmemcellnmos_dram>0</Wmemcellnmos_dram>
+	<area_cell_dram>0.002904</area_cell_dram>
+	<asp_ratio_cell_dram>0.667</asp_ratio_cell_dram>
+	<c_dram_cell>30e-15</c_dram_cell>
+	<vpp>2.3</vpp>
+	
+	<geometries>
+		<Lphy>0.022</Lphy>
+		<Xj>0.004875</Xj>
+	</geometries>
+
+	<voltages>
+		<vdd_dram_cell>0.9</vdd_dram_cell>
+		<v_th_dram_access_transistor>1</v_th_dram_access_transistor>
+	</voltages>
+
+	<capacitances>
+		<c_ox>9.06e-15</c_ox>
+		<c_fringe>0.053e-15</c_fringe>
+		<c_junc>1e-15</c_junc>
+		<c_junc_sidewall>0.5e-15</c_junc_sidewall>
+		<c_junc_sidewall_gate>0.5e-15</c_junc_sidewall_gate>
+	</capacitances>
+
+	<currents>
+		<ON_current>
+			<NMOS>
+				<temp val="300">910.5e-6</temp>
+				<temp val="310">910.5e-6</temp>
+				<temp val="320">910.5e-6</temp>
+				<temp val="330">910.5e-6</temp>
+				<temp val="340">910.5e-6</temp>
+				<temp val="350">910.5e-6</temp>
+				<temp val="360">910.5e-6</temp>
+				<temp val="370">910.5e-6</temp>
+				<temp val="380">910.5e-6</temp>
+				<temp val="390">910.5e-6</temp>
+				<temp val="400">910.5e-6</temp>
+			</NMOS>
+			<PMOS>
+				<temp val="300">455.25e-6</temp>
+				<temp val="310">455.25e-6</temp>
+				<temp val="320">455.25e-6</temp>
+				<temp val="330">455.25e-6</temp>
+				<temp val="340">455.25e-6</temp>
+				<temp val="350">455.25e-6</temp>
+				<temp val="360">455.25e-6</temp>
+				<temp val="370">455.25e-6</temp>
+				<temp val="380">455.25e-6</temp>
+				<temp val="390">455.25e-6</temp>
+				<temp val="400">455.25e-6</temp>
+			</PMOS>
+		</ON_current>
+		<OFF_current>
+			<NMOS>
+				<temp val="300">1.1e-13</temp>
+				<temp val="310">2.11e-13</temp>
+				<temp val="320">3.88e-13</temp>
+				<temp val="330">6.9e-13</temp>
+				<temp val="340">1.19e-12</temp>
+				<temp val="350">1.98e-12</temp>
+				<temp val="360">3.22e-12</temp>
+				<temp val="370">5.09e-12</temp>
+				<temp val="380">7.85e-12</temp>
+				<temp val="390">1.18e-11</temp>
+				<temp val="400">1.72e-11</temp>
+			</NMOS>
+			<PMOS>
+				<temp val="300">1.1e-13</temp>
+				<temp val="310">2.11e-13</temp>
+				<temp val="320">3.88e-13</temp>
+				<temp val="330">6.9e-13</temp>
+				<temp val="340">1.19e-12</temp>
+				<temp val="350">1.98e-12</temp>
+				<temp val="360">3.22e-12</temp>
+				<temp val="370">5.09e-12</temp>
+				<temp val="380">7.85e-12</temp>
+				<temp val="390">1.18e-11</temp>
+				<temp val="400">1.72e-11</temp>
+			</PMOS>
+		</OFF_current>
+	</currents>
+</dram_cell>

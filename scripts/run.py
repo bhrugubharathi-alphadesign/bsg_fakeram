@@ -18,9 +18,9 @@ from utils.generate_techmap import generate_techmap
 # RUN GENERATOR
 #
 # This is the main part of the script. It will read in the JSON configuration
-# file, create a Cacti configuration file, run Cacti, extract the data from
-# Cacti, and then generate the timing, physical and logical views for each SRAM
-# found in the JSON configuration file.
+# file, select the modeling backend, extract area/power/timing data, and then
+# generate the timing, physical and logical views for each SRAM found in the
+# JSON configuration file.
 ################################################################################
 
 def get_args() -> argparse.Namespace:
@@ -42,7 +42,20 @@ def get_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--cacti_dir", action="store", help="CACTI installation directory ", required=False, default=None
+        "--pcacti_dir", action="store", help="P-CACTI installation directory ", required=False, default=None
+    )
+
+    parser.add_argument(
+        "--cacti_dir", action="store", help="Legacy CACTI installation directory ", required=False, default=None
+    )
+
+    parser.add_argument(
+        "--model_backend",
+        action="store",
+        choices=("auto", "pcacti", "cacti"),
+        help="Area/power/timing backend. Auto selects P-CACTI below 22 nm and legacy CACTI for 22 nm and larger.",
+        required=False,
+        default="auto",
     )
 
     return parser.parse_args()
@@ -60,7 +73,7 @@ def main ( args : argparse.Namespace):
 
   # Go through each sram and generate the lib, lef and v files
   for sram_data in json_data['srams']:
-    memory = Memory(process, sram_data, args.output_dir, args.cacti_dir)
+    memory = Memory(process, sram_data, args.output_dir, args.cacti_dir, args.pcacti_dir, args.model_backend)
     generate_lib(memory)
     generate_lef(memory)
     generate_verilog(memory, tmChkExpand=process.vlogTimingCheckSignalExpansion)
@@ -71,5 +84,8 @@ def main ( args : argparse.Namespace):
 ### Entry point
 if __name__ == '__main__':
   args = get_args()
-  main( args )
-
+  try:
+    main( args )
+  except Exception as e:
+    print(f'ERROR: {e}', file=sys.stderr)
+    sys.exit(1)

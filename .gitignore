@@ -1,3 +1,21 @@
-tools/
 results/
 __pycache__/
+
+# Local tool archives are not needed once the vendored source is checked in.
+tools/*.tar
+
+# Legacy CACTI is cloned by `make tools`; do not vendor that generated checkout.
+tools/cacti/
+
+# Vendored P-CACTI source is tracked; build and run outputs are not.
+tools/pcacti/cacti
+tools/pcacti/cacti.py
+tools/pcacti/_cacti.so
+tools/pcacti/*.o
+tools/pcacti/obj_*/
+tools/pcacti/out.csv
+tools/pcacti/pcacti.csv
+tools/pcacti/pcacti_report.txt
+tools/pcacti/pcacti_detailed_report.txt
+tools/pcacti/core
+tools/pcacti/core.*
