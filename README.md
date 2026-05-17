@@ -102,6 +102,9 @@ $ ./scripts/run.py <path to config file> --model_backend pcacti
 $ ./scripts/run.py <path to config file> --model_backend cacti
 ```
 
+More details on the P-CACTI integration are in
+`docs/pcacti_integration.md`.
+
 If you'd perfer, you can open up the Makefile and set `CONFIG` rather than
 setting it on the command line.
 
